@@ -1,0 +1,152 @@
+<!DOCTYPE html>  <html> <head>   <title>btree_copy.hh</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="btree_copy.cc.html">                 btree_copy.cc               </a>                                           <a class="source" href="btree_copy.hh.html">                 btree_copy.hh               </a>                                           <a class="source" href="compactor.cc.html">                 compactor.cc               </a>                                           <a class="source" href="reduces.cc.html">                 reduces.cc               </a>                                           <a class="source" href="reduces.hh.html">                 reduces.hh               </a>                                           <a class="source" href="wrap.cc.html">                 wrap.cc               </a>                                           <a class="source" href="wrap.hh.html">                 wrap.hh               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               btree_copy.hh             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>                            </td>             <td class="code">               <div class="highlight"><pre><span class="cp">#ifndef COUCH_BTREE_COPY_H</span>
+<span class="cp">#define COUCH_BTREE_COPY_H</span>
+<span class="cp">#include &lt;libcouchstore/couch_common.h&gt;</span>
+<span class="cp">#include &lt;utility&gt;</span>
+<span class="cp">#include &lt;vector&gt;</span>
+<span class="cp">#include &quot;wrap.hh&quot;</span>
+<span class="cp">#include &lt;tr1/memory&gt;</span>
+<span class="cp">#define SHARED_PTR_NS std::tr1</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <h1>B-tree Copy</h1>
+
+<p>Specialized B-Tree writer for copying a B-tree (or at least
+an already sorted list of K/V pairs) into a new B-tree.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">namespace</span> <span class="n">couchstore</span>
+<span class="p">{</span>
+<span class="k">using</span> <span class="n">SHARED_PTR_NS</span><span class="o">::</span><span class="n">shared_ptr</span><span class="p">;</span>
+<span class="k">static</span> <span class="k">const</span> <span class="n">uint64_t</span> <span class="n">kChunkThreshold</span> <span class="o">=</span> <span class="mi">1279</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;</span> <span class="n">BufPtr</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">std</span><span class="o">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="n">BufPtr</span><span class="p">,</span> <span class="n">BufPtr</span><span class="o">&gt;</span> <span class="n">KVPair</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">KVPair</span><span class="o">&gt;</span> <span class="n">KVVec</span><span class="p">;</span>
+
+<span class="k">enum</span> <span class="n">NodeType</span><span class="p">{</span>
+  <span class="n">kKVNode</span><span class="p">,</span>
+  <span class="n">kKPNode</span>
+<span class="p">};</span>
+
+<span class="cp">#pragma pack(1)</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>Ask the compiler not to word-align this struct, as it's used for reading and
+writing to disk.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">struct</span> <span class="n">disk_docinfo</span> <span class="p">{</span>
+  <span class="n">uint64_t</span> <span class="n">db_seq</span><span class="p">;</span>
+  <span class="n">uint64_t</span> <span class="n">rev_seq</span><span class="p">;</span>
+  <span class="n">uint64_t</span> <span class="n">bp</span><span class="p">;</span>
+  <span class="n">uint32_t</span> <span class="n">len</span><span class="p">;</span>
+  <span class="n">uint32_t</span> <span class="n">id_len</span><span class="p">;</span>
+  <span class="n">uint32_t</span> <span class="n">rev_meta_len</span><span class="p">;</span>
+  <span class="n">uint32_t</span> <span class="n">size</span><span class="p">;</span>
+  <span class="n">uint8_t</span> <span class="n">deleted</span><span class="p">;</span>
+  <span class="n">uint8_t</span> <span class="n">content_meta</span><span class="p">;</span>
+<span class="p">};</span>
+<span class="cp">#pragma pack()</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <h2>Reduce function interface.</h2>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">Reduce</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <p>Reduce called adding a kv pair to a leaf node</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="k">virtual</span> <span class="kt">void</span> <span class="k">operator</span><span class="p">()(</span><span class="n">KVPair</span><span class="o">&amp;</span> <span class="n">kv_pair</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <p>Reduce called adding a pointer to a pointer node</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="k">virtual</span> <span class="kt">void</span> <span class="k">operator</span><span class="p">()(</span><span class="n">Reduce</span><span class="o">*</span> <span class="n">reduce</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <p>Clone the reduce value (the internal accumulators, but not any temporary
+buffer used for encoding) so that it can be added to a NodePointer and
+rereduced over.</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="k">virtual</span> <span class="n">Reduce</span><span class="o">*</span> <span class="n">clone</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-8">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-8">&#182;</a>               </div>               <p>Encode reduce value as a sized_buf (will not need more than one result from
+this at a time, so it's okay to use a single buffer to return this)</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="k">virtual</span> <span class="n">sized_buf</span><span class="o">*</span> <span class="n">encode</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <p>Clear the reduce's accumulators (starting a new node)</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="k">virtual</span> <span class="kt">void</span> <span class="n">reset</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="k">virtual</span> <span class="o">~</span><span class="n">Reduce</span><span class="p">()</span> <span class="p">{</span> <span class="p">};</span>
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="n">Reduce</span><span class="p">()</span> <span class="p">{</span> <span class="p">}</span>
+ <span class="k">private</span><span class="o">:</span>
+  <span class="n">DISALLOW_COPY_AND_ASSIGN</span><span class="p">(</span><span class="n">Reduce</span><span class="p">);</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-10">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-10">&#182;</a>               </div>               <h2>Node Pointer for Copying B-tree</h2>
+
+<p>We use this instead of the regular couchstore node_pointer so we can keep
+the non-serialized version of the reduce around, so that our Reduces don't
+have to do erlang term parsing.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">NodePointer</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">NodePointer</span><span class="p">(</span><span class="n">uint64_t</span> <span class="n">pointer</span><span class="p">,</span> <span class="n">Reduce</span><span class="o">*</span> <span class="n">reduceval</span><span class="p">,</span> <span class="n">uint64_t</span> <span class="n">subtreesize</span><span class="p">,</span> <span class="n">BufPtr</span> <span class="n">key</span><span class="p">)</span> <span class="o">:</span>
+      <span class="n">pointer_</span><span class="p">(</span><span class="n">pointer</span><span class="p">),</span> <span class="n">reduce_value_</span><span class="p">(</span><span class="n">reduceval</span><span class="p">),</span>
+      <span class="n">subtreesize_</span><span class="p">(</span><span class="n">subtreesize</span><span class="p">),</span> <span class="n">key_</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">encoded_reduce_</span> <span class="o">=</span> <span class="n">reduce_value_</span><span class="o">-&gt;</span><span class="n">encode</span><span class="p">();</span>
+      <span class="p">}</span>
+  <span class="o">~</span><span class="n">NodePointer</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">delete</span> <span class="n">reduce_value_</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="n">encode</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">buf</span><span class="p">);</span>
+  <span class="kt">int</span> <span class="n">encodedSize</span><span class="p">();</span>
+  <span class="kt">void</span> <span class="n">makeBySeqRoot</span><span class="p">(</span><span class="n">DBHandle</span> <span class="o">&amp;</span><span class="n">db</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">setAsRoot</span><span class="p">(</span><span class="o">&amp;</span><span class="p">(</span><span class="n">db</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">header</span><span class="p">.</span><span class="n">by_seq_root</span><span class="p">));</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="n">makeByIdRoot</span><span class="p">(</span><span class="n">DBHandle</span> <span class="o">&amp;</span><span class="n">db</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">setAsRoot</span><span class="p">(</span><span class="o">&amp;</span><span class="p">(</span><span class="n">db</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">header</span><span class="p">.</span><span class="n">by_id_root</span><span class="p">));</span>
+  <span class="p">}</span>
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="k">friend</span> <span class="k">class</span> <span class="nc">NodeBuilder</span><span class="p">;</span>
+  <span class="n">uint64_t</span> <span class="n">pointer_</span><span class="p">;</span>
+  <span class="n">sized_buf</span><span class="o">*</span> <span class="n">encoded_reduce_</span><span class="p">;</span>
+  <span class="n">Reduce</span><span class="o">*</span> <span class="n">reduce_value_</span><span class="p">;</span>
+  <span class="n">uint64_t</span> <span class="n">subtreesize_</span><span class="p">;</span>
+  <span class="n">BufPtr</span> <span class="n">key_</span><span class="p">;</span>
+ <span class="k">private</span><span class="o">:</span>
+  <span class="kt">void</span> <span class="n">setAsRoot</span><span class="p">(</span><span class="n">node_pointer</span><span class="o">**</span><span class="p">);</span>
+  <span class="n">DISALLOW_COPY_AND_ASSIGN</span><span class="p">(</span><span class="n">NodePointer</span><span class="p">);</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-11">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-11">&#182;</a>               </div>               <h2>B-tree Node Builder</h2>
+
+<p>This class is responsible for the collection of K/V pairs in a B-Tree node
+(both <code>kv_node</code>s and <code>kp_node</code>s), and writing out the node once the size it
+would be before compression passes <code>kChunkThreshold</code></p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">NodeBuilder</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">NodeBuilder</span><span class="p">(</span><span class="n">Db</span><span class="o">*</span> <span class="n">db</span><span class="p">,</span> <span class="n">Reduce</span><span class="o">*</span> <span class="n">reduce</span><span class="p">)</span> <span class="o">:</span> <span class="n">nodesize_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">db_</span><span class="p">(</span><span class="n">db</span><span class="p">),</span> <span class="n">reduce_</span><span class="p">(</span><span class="n">reduce</span><span class="p">),</span>
+    <span class="n">type_</span><span class="p">(</span><span class="n">kKVNode</span><span class="p">),</span> <span class="n">subtreesize_</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="p">}</span>
+  <span class="n">NodeBuilder</span><span class="p">(</span><span class="n">Db</span><span class="o">*</span> <span class="n">db</span><span class="p">,</span> <span class="n">Reduce</span><span class="o">*</span> <span class="n">reduce</span><span class="p">,</span> <span class="n">NodeType</span> <span class="n">type</span><span class="p">)</span> <span class="o">:</span> <span class="n">nodesize_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">db_</span><span class="p">(</span><span class="n">db</span><span class="p">),</span>
+    <span class="n">reduce_</span><span class="p">(</span><span class="n">reduce</span><span class="p">),</span> <span class="n">type_</span><span class="p">(</span><span class="n">type</span><span class="p">),</span> <span class="n">subtreesize_</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="p">}</span>
+  <span class="o">~</span><span class="n">NodeBuilder</span><span class="p">()</span> <span class="p">{</span> <span class="p">}</span>
+  <span class="kt">int</span> <span class="n">addItem</span><span class="p">(</span><span class="n">KVPair</span> <span class="n">kv_pair</span><span class="p">)</span> <span class="p">{</span>
+    <span class="p">(</span><span class="o">*</span><span class="n">reduce_</span><span class="p">)(</span><span class="n">kv_pair</span><span class="p">);</span>
+    <span class="n">items_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">kv_pair</span><span class="p">);</span>
+    <span class="n">nodesize_</span> <span class="o">+=</span> <span class="n">kv_pair</span><span class="p">.</span><span class="n">first</span><span class="o">-&gt;</span><span class="n">size</span> <span class="o">+</span> <span class="n">kv_pair</span><span class="p">.</span><span class="n">second</span><span class="o">-&gt;</span><span class="n">size</span> <span class="o">+</span> <span class="mi">2</span><span class="p">;</span>
+    <span class="k">if</span><span class="p">(</span><span class="n">nodesize_</span> <span class="o">&gt;</span> <span class="n">kChunkThreshold</span><span class="p">)</span>
+      <span class="k">return</span> <span class="n">flush</span><span class="p">();</span>
+    <span class="k">else</span>
+      <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="kt">int</span> <span class="n">addItem</span><span class="p">(</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">NodePointer</span><span class="o">&gt;</span> <span class="n">ptr</span><span class="p">)</span> <span class="p">{</span>
+    <span class="p">(</span><span class="o">*</span><span class="n">reduce_</span><span class="p">)(</span><span class="n">ptr</span><span class="o">-&gt;</span><span class="n">reduce_value_</span><span class="p">);</span>
+    <span class="n">pointer_items_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">ptr</span><span class="p">);</span>
+    <span class="n">BufPtr</span> <span class="n">value</span> <span class="p">(</span><span class="k">new</span> <span class="n">Buffer</span><span class="p">(</span><span class="n">ptr</span><span class="o">-&gt;</span><span class="n">encodedSize</span><span class="p">()));</span>
+    <span class="n">ptr</span><span class="o">-&gt;</span><span class="n">encode</span><span class="p">(</span><span class="n">value</span><span class="o">-&gt;</span><span class="n">buf</span><span class="p">);</span>
+    <span class="n">items_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">KVPair</span><span class="p">(</span><span class="n">ptr</span><span class="o">-&gt;</span><span class="n">key_</span><span class="p">,</span> <span class="n">value</span><span class="p">));</span>
+    <span class="n">nodesize_</span> <span class="o">+=</span> <span class="n">ptr</span><span class="o">-&gt;</span><span class="n">key_</span><span class="o">-&gt;</span><span class="n">size</span> <span class="o">+</span> <span class="n">value</span><span class="o">-&gt;</span><span class="n">size</span> <span class="o">+</span> <span class="mi">2</span><span class="p">;</span>
+    <span class="n">subtreesize_</span> <span class="o">+=</span> <span class="n">ptr</span><span class="o">-&gt;</span><span class="n">subtreesize_</span><span class="p">;</span>
+    <span class="k">if</span><span class="p">(</span><span class="n">nodesize_</span> <span class="o">&gt;</span> <span class="n">kChunkThreshold</span><span class="p">)</span>
+      <span class="k">return</span> <span class="n">flush</span><span class="p">();</span>
+    <span class="k">else</span>
+      <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-12">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-12">&#182;</a>               </div>               <p><code>flush</code> writes the items collected so far as a node and adds a pointer to
+it to the pointers list.</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="kt">int</span> <span class="n">flush</span><span class="p">();</span></pre></div>             </td>           </tr>                               <tr id="section-13">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-13">&#182;</a>               </div>               <p><code>dumpPointers</code> moves all the pointers this NodeBuilder has generated to
+another NodeBuilder's item list (generating pointer nodes)</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="kt">int</span> <span class="n">dumpPointers</span><span class="p">(</span><span class="n">NodeBuilder</span><span class="o">&amp;</span> <span class="n">builder</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">error</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="k">for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">NodePointer</span><span class="o">&gt;</span> <span class="o">&gt;::</span><span class="n">iterator</span> <span class="n">it</span> <span class="o">=</span> <span class="n">pointers_</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span>
+        <span class="n">it</span> <span class="o">!=</span> <span class="n">pointers_</span><span class="p">.</span><span class="n">end</span><span class="p">();</span> <span class="o">++</span><span class="n">it</span><span class="p">)</span>
+    <span class="p">{</span>
+      <span class="n">error</span> <span class="o">=</span> <span class="n">builder</span><span class="p">.</span><span class="n">addItem</span><span class="p">(</span><span class="o">*</span><span class="n">it</span><span class="p">);</span>
+      <span class="k">if</span><span class="p">(</span><span class="n">error</span><span class="p">)</span> <span class="k">return</span> <span class="n">error</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">pointers_</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
+    <span class="k">return</span> <span class="n">error</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">NodePointer</span><span class="o">&gt;</span> <span class="o">&gt;*</span> <span class="n">pointers</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">&amp;</span><span class="n">pointers_</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="n">setType</span><span class="p">(</span><span class="n">NodeType</span> <span class="n">type</span><span class="p">)</span>
+  <span class="p">{</span>
+    <span class="n">type_</span> <span class="o">=</span> <span class="n">type</span><span class="p">;</span>
+  <span class="p">}</span>
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="k">friend</span> <span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">NodePointer</span><span class="o">&gt;</span> <span class="n">build_pointers</span><span class="p">(</span><span class="n">NodeBuilder</span><span class="o">&amp;</span><span class="p">);</span>
+  <span class="n">uint64_t</span> <span class="n">nodesize_</span><span class="p">;</span>
+  <span class="n">Db</span><span class="o">*</span> <span class="n">db_</span><span class="p">;</span>
+  <span class="n">Reduce</span><span class="o">*</span> <span class="n">reduce_</span><span class="p">;</span>
+  <span class="n">NodeType</span> <span class="n">type_</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">KVPair</span><span class="o">&gt;</span> <span class="n">items_</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">NodePointer</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">pointers_</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">NodePointer</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">pointer_items_</span><span class="p">;</span>
+  <span class="n">uint64_t</span> <span class="n">subtreesize_</span><span class="p">;</span>
+ <span class="k">private</span><span class="o">:</span>
+  <span class="n">DISALLOW_COPY_AND_ASSIGN</span><span class="p">(</span><span class="n">NodeBuilder</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">NodePointer</span><span class="o">&gt;</span> <span class="n">build_pointers</span><span class="p">(</span><span class="n">NodeBuilder</span><span class="o">&amp;</span> <span class="n">builder</span><span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-14">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-14">&#182;</a>               </div>               <p>Callback functions for on-disk merge sort (used to sort our new docinfos by
+ID to create a by ID b-tree.)
+Uses <a href="http://www.efgh.com/software/mergesor.htm">this on-disk sort implementation</a></p>             </td>             <td class="code">               <div class="highlight"><pre><span class="kt">int</span> <span class="n">read_diskdocinfo</span><span class="p">(</span><span class="n">FILE</span><span class="o">*</span> <span class="n">fp</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">buffer</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">ctx</span><span class="p">);</span>
+<span class="kt">int</span> <span class="n">write_diskdocinfo</span><span class="p">(</span><span class="n">FILE</span><span class="o">*</span> <span class="n">fp</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">buffer</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">ctx</span><span class="p">);</span>
+<span class="kt">int</span> <span class="n">compare_diskdocinfo</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="n">d1</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">d2</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">ctx</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="cp">#endif</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

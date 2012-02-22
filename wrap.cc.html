@@ -1,0 +1,74 @@
+<!DOCTYPE html>  <html> <head>   <title>wrap.cc</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="btree_copy.cc.html">                 btree_copy.cc               </a>                                           <a class="source" href="btree_copy.hh.html">                 btree_copy.hh               </a>                                           <a class="source" href="compactor.cc.html">                 compactor.cc               </a>                                           <a class="source" href="reduces.cc.html">                 reduces.cc               </a>                                           <a class="source" href="reduces.hh.html">                 reduces.hh               </a>                                           <a class="source" href="wrap.cc.html">                 wrap.cc               </a>                                           <a class="source" href="wrap.hh.html">                 wrap.hh               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               wrap.cc             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>                            </td>             <td class="code">               <div class="highlight"><pre><span class="cp">#include &quot;wrap.hh&quot;</span>
+<span class="k">namespace</span> <span class="n">couchstore</span>
+<span class="p">{</span>
+<span class="n">DocInfo</span><span class="o">*</span> <span class="n">DocumentInfo</span><span class="o">::</span><span class="n">get</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="k">return</span> <span class="n">docinfo_</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">DocumentInfo</span><span class="o">::~</span><span class="n">DocumentInfo</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="n">couchstore_allocated</span><span class="p">)</span>
+    <span class="n">free_docinfo</span><span class="p">(</span><span class="n">docinfo_</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="n">DBHandle</span><span class="o">::</span><span class="n">DBHandle</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">filename</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">create</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">db_handle_</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+  <span class="n">uint64_t</span> <span class="n">flags</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="k">if</span><span class="p">(</span><span class="n">create</span><span class="p">)</span>
+    <span class="n">flags</span> <span class="o">=</span> <span class="n">COUCH_CREATE_FILES</span><span class="p">;</span>
+  <span class="n">last_error_</span> <span class="o">=</span> <span class="n">open_db</span><span class="p">(</span><span class="k">const_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">filename</span><span class="p">.</span><span class="n">c_str</span><span class="p">()),</span>
+                                           <span class="n">flags</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">db_handle_</span><span class="p">);</span>
+  <span class="k">if</span><span class="p">(</span><span class="n">last_error_</span><span class="p">)</span> <span class="n">db_handle_</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">DBHandle</span><span class="o">::~</span><span class="n">DBHandle</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="n">db_handle_</span><span class="p">)</span>
+    <span class="n">close_db</span><span class="p">(</span><span class="n">db_handle_</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">bool</span> <span class="n">DBHandle</span><span class="o">::</span><span class="n">isValid</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="k">return</span> <span class="n">db_handle_</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="n">DBHandle</span><span class="o">::</span><span class="n">lastError</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="k">return</span> <span class="n">last_error_</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">DBHandle</span><span class="o">::</span><span class="n">describeLastError</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="n">last_error_</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s">&quot;Success&quot;</span><span class="p">;</span>
+  <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="n">describe_error</span><span class="p">(</span><span class="n">last_error_</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="n">Db</span><span class="o">*</span> <span class="n">DBHandle</span><span class="o">::</span><span class="n">get</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="k">return</span> <span class="n">db_handle_</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">struct</span> <span class="n">cs_callback_ctx</span> <span class="p">{</span>
+  <span class="n">cs_callback_ctx</span> <span class="p">(</span><span class="n">InfoCallback</span> <span class="o">*</span><span class="n">callback</span><span class="p">)</span> <span class="o">:</span> <span class="n">cb</span><span class="p">(</span><span class="n">callback</span><span class="p">)</span> <span class="p">{</span> <span class="p">}</span>
+  <span class="n">InfoCallback</span><span class="o">*</span> <span class="n">cb</span><span class="p">;</span>
+<span class="p">};</span>
+<span class="kt">int</span> <span class="n">do_callback</span><span class="p">(</span><span class="n">Db</span><span class="o">*</span> <span class="n">db</span><span class="p">,</span> <span class="n">DocInfo</span><span class="o">*</span> <span class="n">info</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">ctxptr</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">cs_callback_ctx</span><span class="o">*</span> <span class="n">ctx</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">cs_callback_ctx</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">ctxptr</span><span class="p">);</span>
+  <span class="n">DocumentInfo</span> <span class="n">wrapped</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">info</span><span class="p">);</span>
+  <span class="n">ctx</span><span class="o">-&gt;</span><span class="n">cb</span><span class="o">-&gt;</span><span class="n">callback</span><span class="p">(</span><span class="n">wrapped</span><span class="p">);</span>
+  <span class="k">return</span> <span class="n">NO_FREE_DOCINFO</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="n">DBHandle</span><span class="o">::</span><span class="n">changes</span><span class="p">(</span><span class="kt">int</span> <span class="n">seq</span><span class="p">,</span> <span class="n">InfoCallback</span> <span class="o">&amp;</span><span class="n">cb</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">cs_callback_ctx</span> <span class="n">ctx</span> <span class="p">(</span><span class="o">&amp;</span><span class="n">cb</span><span class="p">);</span>
+  <span class="n">last_error_</span> <span class="o">=</span> <span class="n">changes_since</span><span class="p">(</span><span class="n">db_handle_</span><span class="p">,</span> <span class="n">seq</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">do_callback</span><span class="p">,</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">*&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ctx</span><span class="p">));</span>
+  <span class="k">return</span> <span class="n">last_error_</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p">}</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

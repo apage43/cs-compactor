@@ -1,0 +1,77 @@
+<!DOCTYPE html>  <html> <head>   <title>wrap.hh</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="btree_copy.cc.html">                 btree_copy.cc               </a>                                           <a class="source" href="btree_copy.hh.html">                 btree_copy.hh               </a>                                           <a class="source" href="compactor.cc.html">                 compactor.cc               </a>                                           <a class="source" href="reduces.cc.html">                 reduces.cc               </a>                                           <a class="source" href="reduces.hh.html">                 reduces.hh               </a>                                           <a class="source" href="wrap.cc.html">                 wrap.cc               </a>                                           <a class="source" href="wrap.hh.html">                 wrap.hh               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               wrap.hh             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>                            </td>             <td class="code">               <div class="highlight"><pre><span class="cp">#ifndef COUCHSTORE_WRAP_HH</span>
+<span class="cp">#define COUCHSTORE_WRAP_HH</span>
+<span class="cp">#include &lt;libcouchstore/couch_db.h&gt;</span>
+<span class="cp">#include &lt;string&gt;</span>
+<span class="cp">#include &lt;stdint.h&gt;</span>
+<span class="cp">#define DISALLOW_COPY_AND_ASSIGN(TypeName) \</span>
+<span class="cp">  TypeName(const TypeName&amp;);   \</span>
+<span class="cp">  void operator=(const TypeName&amp;)</span>
+<span class="k">namespace</span> <span class="n">couchstore</span>
+<span class="p">{</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <h2>C++ RAII wrappers around Couchstore</h2>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">DocumentInfo</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">DocInfo</span><span class="o">*</span> <span class="n">get</span><span class="p">();</span>
+  <span class="n">DocInfo</span><span class="o">*</span> <span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">get</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="o">~</span><span class="n">DocumentInfo</span><span class="p">();</span>
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="k">friend</span> <span class="kt">int</span> <span class="n">do_callback</span><span class="p">(</span><span class="n">Db</span><span class="o">*</span><span class="p">,</span> <span class="n">DocInfo</span><span class="o">*</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span><span class="p">);</span>
+  <span class="n">DocumentInfo</span><span class="p">(</span><span class="n">Db</span><span class="o">*</span> <span class="n">db</span><span class="p">,</span> <span class="n">DocInfo</span><span class="o">*</span> <span class="n">info</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">docinfo_</span><span class="p">(</span><span class="n">info</span><span class="p">),</span> <span class="n">couchstore_allocated</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span> <span class="p">{</span> <span class="p">}</span>
+  <span class="n">Db</span><span class="o">*</span> <span class="n">db_handle_</span><span class="p">;</span>
+  <span class="n">DocInfo</span><span class="o">*</span> <span class="n">docinfo_</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="n">couchstore_allocated</span><span class="p">;</span>
+ <span class="k">private</span><span class="o">:</span>
+  <span class="n">DISALLOW_COPY_AND_ASSIGN</span><span class="p">(</span><span class="n">DocumentInfo</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="k">class</span> <span class="nc">InfoCallback</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="k">virtual</span> <span class="kt">int</span> <span class="n">callback</span><span class="p">(</span><span class="n">DocumentInfo</span> <span class="o">&amp;</span><span class="n">info</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">class</span> <span class="nc">DBHandle</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">DBHandle</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">filename</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">create</span><span class="p">);</span>
+  <span class="o">~</span><span class="n">DBHandle</span><span class="p">();</span>
+  <span class="kt">bool</span> <span class="n">isValid</span><span class="p">();</span>
+  <span class="kt">int</span> <span class="n">lastError</span><span class="p">();</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">describeLastError</span><span class="p">();</span>
+  <span class="kt">int</span> <span class="n">changes</span><span class="p">(</span><span class="kt">int</span> <span class="n">seq</span><span class="p">,</span> <span class="n">InfoCallback</span><span class="o">&amp;</span> <span class="n">cb</span><span class="p">);</span>
+  <span class="n">Db</span><span class="o">*</span> <span class="n">get</span><span class="p">();</span>
+  <span class="n">Db</span><span class="o">*</span> <span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">get</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="kt">int</span> <span class="n">commit</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">commit_all</span><span class="p">(</span><span class="n">db_handle_</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+  <span class="p">}</span>
+ <span class="k">private</span><span class="o">:</span>
+  <span class="kt">int</span> <span class="n">last_error_</span><span class="p">;</span>
+  <span class="n">Db</span><span class="o">*</span> <span class="n">db_handle_</span><span class="p">;</span>
+  <span class="n">DISALLOW_COPY_AND_ASSIGN</span><span class="p">(</span><span class="n">DBHandle</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="k">class</span> <span class="nc">Buffer</span> <span class="o">:</span> <span class="k">public</span> <span class="n">sized_buf</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">Buffer</span><span class="p">(</span><span class="n">size_t</span> <span class="n">sz</span><span class="p">)</span>
+  <span class="p">{</span>
+    <span class="n">buf</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span> <span class="n">malloc</span><span class="p">(</span><span class="n">sz</span><span class="p">);</span>
+    <span class="n">size</span> <span class="o">=</span> <span class="n">sz</span><span class="p">;</span>
+  <span class="p">};</span>
+  <span class="n">Buffer</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">src</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">sz</span><span class="p">)</span>
+  <span class="p">{</span>
+    <span class="n">buf</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span> <span class="n">malloc</span><span class="p">(</span><span class="n">sz</span><span class="p">);</span>
+    <span class="n">size</span> <span class="o">=</span> <span class="n">sz</span><span class="p">;</span>
+    <span class="n">memcpy</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">sz</span><span class="p">);</span>
+  <span class="p">};</span>
+  <span class="o">~</span><span class="n">Buffer</span><span class="p">()</span>
+  <span class="p">{</span>
+    <span class="n">free</span><span class="p">(</span><span class="n">buf</span><span class="p">);</span>
+  <span class="p">};</span>
+ <span class="k">private</span><span class="o">:</span>
+  <span class="n">DISALLOW_COPY_AND_ASSIGN</span><span class="p">(</span><span class="n">Buffer</span><span class="p">);</span>
+<span class="p">};</span>
+<span class="p">}</span>
+<span class="cp">#endif</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 
