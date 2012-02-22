@@ -2,6 +2,8 @@
 #define COUCHSTORE_WRAP_HH
 #include <libcouchstore/couch_db.h>
 #include <string>
+#include <cstring>
+#include <stdlib.h>
 #include <stdint.h>
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&);   \
