@@ -2,7 +2,7 @@ all:
 	cd build && make
 
 check: all
-	rm build/*.compact
+	rm build/*.compact || true
 	cp packthis.couch build/packthis.couch
 	cd build && ./compactor packthis.couch
 	cd build && couch_dbinfo packthis.couch*

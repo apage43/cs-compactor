@@ -83,6 +83,9 @@ class NodePointer {
   void makeByIdRoot(DBHandle &db) {
     setAsRoot(&(db.get()->header.by_id_root));
   }
+  void makeLocalDocsRoot(DBHandle &db) {
+    setAsRoot(&(db.get()->header.local_docs_root));
+  }
  protected:
   friend class NodeBuilder;
   uint64_t pointer_;

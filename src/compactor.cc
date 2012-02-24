@@ -112,7 +112,9 @@ int build_id_index(DBHandle& new_db, FILE* tempfile)
 int local_doc_copy(couchfile_lookup_request* rq, void* k, sized_buf *v)
 {
   sized_buf *key = static_cast<sized_buf*>(k);
-  printf("%.*s\n", (int) key->size, key->buf);
+  NodeBuilder *output = static_cast<NodeBuilder*>(rq->callback_ctx);
+  output->addItem(KVPair(BufPtr(new Buffer(key->buf, key->size)),
+                         BufPtr(new Buffer(v->buf, v->size))));
   return 0;
 }
 
@@ -133,7 +135,11 @@ int copy_local_docs(DBHandle& original_db, DBHandle& new_db)
   rq.num_keys = 1;
   rq.fold = 1;
   rq.fd = original_db.get()->fd;
+  rq.fetch_callback = local_doc_copy;
+  rq.callback_ctx = &output;
   btree_lookup(&rq, original_db.get()->header.local_docs_root->pointer);
+  output.flush();
+  shared_ptr<NodePointer> local_docs_root = build_pointers(output);
   return 0;
 }
 
@@ -147,6 +153,11 @@ int finish_compact(DBHandle& original_db, DBHandle& new_db)
   if(error) return error;
   new_db->header.update_seq = original_db->header.update_seq;
   new_db->header.purge_seq = original_db->header.purge_seq;
+  new_db->header.purged_docs = original_db->header.purged_docs;
+  //**_Hackish_**! -Move- the purged docs object onto to the new db's header.
+  //We have to clear it from the original so it isn't double free()'d.
+  //Important we don't actually write a new header for the original DB.
+  original_db->header.purged_docs = NULL;
   new_db.commit();
   return 0;
 }
